@@ -1,60 +1,59 @@
-"""
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
-"""
 from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, User
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 from werkzeug.security import generate_password_hash, check_password_hash
-import datetime
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
+from base64 import b64encode
+import os
+
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
 CORS(api)
 
 
-@api.route('/hello', methods=['POST', 'GET'])
-def handle_hello():
-
-    response_body = {
-        "message": "Hello! I'm a message that came from the backend, check the network tab on the google inspector and you will see the GET request"
-    }
-
-    return jsonify(response_body), 200
-
-
-@api.route("/sign-up", methods=['POST'])
-def sign_up():
+@api.route("/user", methods=["POST"])
+def register_user():
+    data = request.json
+    if data.get("email", None) is None:
+        return jsonify({"message":"the email is required"}), 400
     
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
-    if email is None or password is None: 
-        return jsonify({"msg": "Missing email/password"}), 400
-    
-    if User.query.filter_by(email = email).first():
-        return jsonify({"msg": "user already exists"}), 400
-    
-    hashed_password = generate_password_hash(password)
-    new_user = User(email = email, password = hashed_password, is_active = True)
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify({"msg": "user created"}), 201
+    salt = b64encode(os.urandom(32)).decode("utf-8")
+    password = generate_password_hash(f"{data['password']}{salt}")
+  
+    user = User(email=data["email"], password=password, salt=salt, is_active=True)
+    db.session.add(user)
+
+    try:
+        db.session.commit()
+        return jsonify({"message":"User save success"}), 201
+    except Exception as error:
+        print(error)
+        return jsonify({"message":f"error {error}"}), 500
+
+
 
 @api.route("/login", methods=["POST"])
-def log_in():
-    email = request.json.get("email")
-    password = request.json.get("password")
-    user = User.query.filter_by(email = email).first()
-    if user is None or not check_password_hash(user.password, password):
-        return jsonify({"msg": "invalid email/password"}), 401
+def user_login():
+    data = request.json
     
-    expiration = datetime.timedelta(hours = 24)
-    access_token = create_access_token(identity=user.id, expires_delta=expiration)
-    return jsonify({"token": access_token}), 200
+    if data.get("email", None) is None:
+        return jsonify({"message":"the email is required"}), 400
 
-@api.route("/private", methods=["GET"])
-@jwt_required()
-def private_account():
-    current_user = get_jwt_identity()
-    return jsonify(logged_in_as = current_user), 200
+
+    user = User.query.filter_by(email=data["email"]).one_or_none()
+    if user is not None:
+        # validar la contraseña
+        result = check_password_hash(user.password, f'{data["password"]}{user.salt}')
+       
+
+        if result: 
+            #generar el token
+            token = create_access_token(identity=user.email)
+
+            return jsonify({"token":token}),201
+        else:
+            return jsonify({"message":"bad credentials"}),400 
+    else:
+        return jsonify({"message":"bad credentials"}),400 

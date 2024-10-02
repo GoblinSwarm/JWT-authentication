@@ -18,34 +18,35 @@ const getState = ({ getStore, getActions, setStore }) => {
 		actions: {
 			login: async (email, password) => {
 				try {
-					let response = await fetch(process.env.BACKEND_URL + "/api/login", {
-						method:"POST", 
+					let response = await fetch(process.env.BACKEND_URL + "/login", {
+						method: "POST",
 						headers: {
-							"Content-Type": "application/json" 
+							"Content-Type": "application/json"
 						},
 						body: JSON.stringify({
-							email: email, password: password
+							email: email,
+							password: password
 						})
 					});
-					if (response.status === 200){
+					
+					if (response.ok) {
 						let data = await response.json();
-						sessionStorage.setItem("token", data.token);
-						return true;
-					}
-					else if (response.status === 401){
-						return false;
+						sessionStorage.setItem("token", data.token); 
+						return { success: true };
+					} else if (response.status === 401) {
+						return { success: false, message: "Unauthorized: Invalid credentials" };
 					} else {
 						console.log("unexpected error occurred on login", response.status);
-						return false;
+						return { success: false, message: "Unexpected error occurred" };
 					}
-				} catch(error){
+				} catch (error) {
 					console.log("There was an error during login", error);
-					return false
+					return { success: false, message: "Network error occurred" };
 				}
-			}, 
+			},
 			signUp: async(email, password) => {
 				try{
-					let response = await fetch(process.env.BACKEND_URL + "/api/sign-up",{
+					let response = await fetch(process.env.BACKEND_URL + "/api/signup",{
 						method:"POST",
 						headers: {
 							"Content-Type": "application/json"

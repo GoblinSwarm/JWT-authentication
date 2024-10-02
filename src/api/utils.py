@@ -1,4 +1,5 @@
 from flask import jsonify, url_for
+from werkzeug.security import generate_password_hash
 
 class APIException(Exception):
     status_code = 400
@@ -19,6 +20,9 @@ def has_no_empty_params(rule):
     defaults = rule.defaults if rule.defaults is not None else ()
     arguments = rule.arguments if rule.arguments is not None else ()
     return len(defaults) >= len(arguments)
+
+def set_password(password, salt):
+    return generate_password_hash(f"{password}{salt}")
 
 def generate_sitemap(app):
     links = ['/admin/']
