@@ -4,7 +4,8 @@ import { BackendURL } from "./component/backendURL";
 import injectContext from "./store/appContext";
 import { Navbar } from "./component/navbar";
 import { Footer } from "./component/footer";
-import Signup from "./pages/signup";
+
+import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import { Private } from "./pages/Private";
 

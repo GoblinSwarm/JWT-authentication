@@ -18,7 +18,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 		actions: {
 			login: async (email, password) => {
 				try {
-					let response = await fetch(process.env.BACKEND_URL + "/login", {
+					let response = await fetch(process.env.BACKEND_URL + "/api/login", {
 						method: "POST",
 						headers: {
 							"Content-Type": "application/json"
@@ -63,23 +63,27 @@ const getState = ({ getStore, getActions, setStore }) => {
 					throw error;	
 				}
 			},
-			goPrivate: async() => {
-				if(sessionStorage.getItem("token")) {
-					try{
-						let response = await fetch(process.env.BACKEND_URL + "/api/private", {
-							headers: {Authorization: "Bearer " + sessionStorage.getItem("token")}
-						}) 
-						if (!response.ok) {return false}
-						else{
-							let data = await response.json()
-							console.log(data)
-							return true
-						}
+			goPrivate: async () => {
+				const token = sessionStorage.getItem("token");
+				if (!token) {
+					return { authenticated: false }; // Cambiado a un objeto para incluir más información
+				}
+			
+				try {
+					const response = await fetch(`${process.env.BACKEND_URL}/api/private`, {
+						headers: { Authorization: `Bearer ${token}` }
+					});
+			
+					if (!response.ok) {
+						console.error(`Error: ${response.status} - ${response.statusText}`);
+						return { authenticated: false }; // Retorna objeto con autenticación falsa
 					}
-					catch(error){
-						console.log(error)
-						return false
-					}
+			
+					const data = await response.json();
+					return { authenticated: true, email: data.email }; // Suponiendo que 'data' contiene 'email'
+				} catch (error) {
+					console.error("Error while checking private access", error);
+					return { authenticated: false }; // En caso de error
 				}
 			}
 		}
