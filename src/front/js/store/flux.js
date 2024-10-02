@@ -80,7 +80,8 @@ const getState = ({ getStore, getActions, setStore }) => {
 					}
 			
 					const data = await response.json();
-					return { authenticated: true, email: data.email }; // Suponiendo que 'data' contiene 'email'
+					console.log("Response Data:", data)
+					return { authenticated: true, email: data.email }; 
 				} catch (error) {
 					console.error("Error while checking private access", error);
 					return { authenticated: false }; // En caso de error

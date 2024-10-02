@@ -60,4 +60,4 @@ def user_login():
 @jwt_required()
 def private_account():
     current_user = get_jwt_identity()
-    return jsonify(logged_in_as = current_user), 200
+    return jsonify(email = current_user), 200
