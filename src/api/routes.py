@@ -8,12 +8,12 @@ from base64 import b64encode
 import os
 
 api = Blueprint('api', __name__)
-
+get_jwt_identity
 # Allow CORS requests to this API
 CORS(api)
 
 
-@api.route("/user", methods=["POST"])
+@api.route("/signup", methods=["POST"])
 def register_user():
     data = request.json
     if data.get("email", None) is None:
@@ -29,7 +29,7 @@ def register_user():
         db.session.commit()
         return jsonify({"message":"User save success"}), 201
     except Exception as error:
-        print(error)
+        print(error.args)
         return jsonify({"message":f"error {error}"}), 500
 
 
@@ -37,23 +37,27 @@ def register_user():
 @api.route("/login", methods=["POST"])
 def user_login():
     data = request.json
-    
+
     if data.get("email", None) is None:
         return jsonify({"message":"the email is required"}), 400
 
-
     user = User.query.filter_by(email=data["email"]).one_or_none()
+    
     if user is not None:
-        # validar la contraseña
-        result = check_password_hash(user.password, f'{data["password"]}{user.salt}')
+        pass_with_salt = data["password"] + user.salt
+        result = check_password_hash(user.password, pass_with_salt)
        
-
         if result: 
-            #generar el token
             token = create_access_token(identity=user.email)
-
             return jsonify({"token":token}),201
         else:
             return jsonify({"message":"bad credentials"}),400 
     else:
         return jsonify({"message":"bad credentials"}),400 
+
+
+@api.route("/private", methods=["GET"])
+@jwt_required()
+def private_account():
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as = current_user), 200
